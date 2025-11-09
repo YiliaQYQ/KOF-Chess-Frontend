@@ -1,0 +1,135 @@
+
+import pygame
+import random
+
+# -------- 基本设置 --------
+pygame.init()
+CELL_SIZE = 80
+ROWS, COLS = 5, 6
+WIDTH, HEIGHT = COLS * CELL_SIZE, ROWS * CELL_SIZE
+SCREEN = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("棋盘策略游戏原型")
+
+FONT = pygame.font.SysFont(None, 30)
+FPS = 30
+
+# -------- 棋子定义 --------
+CHIP_NAMES = ["orichi","yagami","kula","k","mai","kyo","athena"]
+CHIP_COLORS = {
+    "orichi": (255,0,0),
+    "yagami": (255,165,0),
+    "kula": (0,255,0),
+    "k": (0,255,255),
+    "mai": (0,0,255),
+    "kyo": (128,0,128),
+    "athena": (255,255,0)
+}
+
+# -------- 棋盘初始化 --------
+class Chip:
+    def __init__(self, name, is_player=True):
+        self.name = name
+        self.is_player = is_player
+        self.defeat = None  # 仅敌方背面显示
+    def __str__(self):
+        return self.name
+
+board = [[None for _ in range(COLS)] for _ in range(ROWS)]
+
+def random_init():
+    # 每方各放置 6 棋子（可调）
+    player_chips = random.choices(CHIP_NAMES, k=6)
+    enemy_chips = random.choices(CHIP_NAMES, k=6)
+    positions = [(r,c) for r in range(ROWS) for c in range(COLS)]
+    random.shuffle(positions)
+    for i, name in enumerate(player_chips):
+        r,c = positions[i]
+        board[r][c] = Chip(name, True)
+    for i, name in enumerate(enemy_chips):
+        r,c = positions[i+6]
+        board[r][c] = Chip(name, False)
+
+random_init()
+
+# -------- 绘制棋盘 --------
+def draw_board():
+    SCREEN.fill((200,200,200))
+    for r in range(ROWS):
+        for c in range(COLS):
+            rect = pygame.Rect(c*CELL_SIZE, r*CELL_SIZE, CELL_SIZE, CELL_SIZE)
+            pygame.draw.rect(SCREEN, (255,255,255), rect)
+            pygame.draw.rect(SCREEN, (0,0,0), rect,1)
+            chip = board[r][c]
+            if chip:
+                if chip.is_player:
+                    # 显示等级文字
+                    text = FONT.render(chip.name, True, CHIP_COLORS[chip.name])
+                    SCREEN.blit(text, (c*CELL_SIZE+10, r*CELL_SIZE+10))
+                else:
+                    # 背面显示 + defeat信息
+                    pygame.draw.rect(SCREEN, (50,50,50), rect)
+                    if chip.defeat:
+                        text = FONT.render("defeat " + chip.defeat, True, (255,255,255))
+                        SCREEN.blit(text, (c*CELL_SIZE+5, r*CELL_SIZE+10))
+    pygame.display.flip()
+
+# -------- 克制逻辑 --------
+def can_attack(attacker, defender):
+    if attacker.name == "athena":
+        return True
+    attacker_order = ["orichi","yagami","kula","k","mai","kyo"]
+    if defender.name=="athena":
+        return True
+    attacker_idx = attacker_order.index(attacker.name) if attacker.name in attacker_order else -1
+    defender_idx = attacker_order.index(defender.name) if defender.name in attacker_order else -1
+    # 攻击方等级 >= 被攻击方等级
+    if attacker.name == defender.name:
+        return True
+    if attacker_idx != -1 and defender_idx != -1:
+        return attacker_idx >= defender_idx
+    return False
+
+# -------- 主循环 --------
+selected = None
+running = True
+clock = pygame.time.Clock()
+
+while running:
+    draw_board()
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            x,y = event.pos
+            r,c = y//CELL_SIZE, x//CELL_SIZE
+            chip = board[r][c]
+            if selected:
+                # 移动或攻击
+                sr,sc = selected
+                s_chip = board[sr][sc]
+                if abs(sr-r)+abs(sc-c)==1:  # 相邻格
+                    target_chip = board[r][c]
+                    if target_chip is None:
+                        board[r][c] = s_chip
+                        board[sr][sc] = None
+                    else:
+                        # 检查攻击或融合
+                        if s_chip.name=="athena" and not s_chip.is_player==target_chip.is_player:
+                            # 融合
+                            board[r][c] = None
+                            board[sr][sc] = None
+                        elif s_chip.is_player != target_chip.is_player:
+                            if can_attack(s_chip, target_chip):
+                                # 攻击成功
+                                board[r][c] = s_chip
+                                board[sr][sc] = None
+                            else:
+                                # 攻击失败
+                                board[sr][sc] = None
+                                target_chip.defeat = s_chip.name
+                selected = None
+            elif chip and chip.is_player:
+                selected = (r,c)
+    clock.tick(FPS)
+
+pygame.quit()
