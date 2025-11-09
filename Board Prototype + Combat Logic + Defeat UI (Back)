@@ -12,6 +12,7 @@ pygame.display.set_caption("KOF Chess Prototype")
 FONT = pygame.font.SysFont(None, 28)
 FPS = 30
 
+
 # -------- 棋子定义 --------
 CHIP_NAMES = ["orichi","yagami","kula","k","mai","kyo","athena"]
 CHIP_COLORS = {
@@ -21,7 +22,7 @@ CHIP_COLORS = {
     "k": (0,255,255),
     "mai": (0,0,255),
     "kyo": (128,0,128),
-    "athena": (255,105,180)  # 粉色，更醒目
+    "athena": (255,105,180)  # 粉色
 }
 
 # -------- 棋盘类 --------
