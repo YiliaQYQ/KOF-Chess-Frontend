@@ -21,7 +21,7 @@ CHIP_COLORS = {
     "k": (0,255,255),
     "mai": (0,0,255),
     "kyo": (128,0,128),
-    "athena": (255,255,0)
+    "athena": (255,105,180)  # 粉色，更醒目
 }
 
 # -------- 棋盘类 --------
@@ -79,16 +79,24 @@ def draw_board(selected=None):
 
 # -------- 克制逻辑 --------
 def can_attack(attacker, defender):
+    # 雅典娜特殊逻辑
     if attacker.name=="athena" or defender.name=="athena":
         return True
+
+    # Kyo 特殊规则
+    if attacker.name=="kyo":
+        return defender.name == "orichi"  # Kyo只能吃Orichi
+
+    # 普通等级判定
     order = ["orichi","yagami","kula","k","mai","kyo"]
     if attacker.name == defender.name:
         return True
     if attacker.name in order and defender.name in order:
         attacker_idx = order.index(attacker.name)
         defender_idx = order.index(defender.name)
-        return attacker_idx >= defender_idx
+        return attacker_idx < defender_idx  # 等级高的能吃低的
     return False
+
 
 # -------- 主循环 --------
 selected = None
