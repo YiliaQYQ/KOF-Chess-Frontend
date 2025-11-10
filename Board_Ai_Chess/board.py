@@ -6,7 +6,31 @@ from chip import Chip
 from animations import animate_move, animate_athena_fusion
 
 board = [[None for _ in range(COLS)] for _ in range(ROWS)]
-defeat_board = [[None for _ in range(COLS)] for _ in range(ROWS)]
+defeat_board = [[None for _ in range(COLS)] for _ in range(ROWS)]  # 保留用于空格显示（当前不使用）
+
+# 棋子等级排序（从高到低）
+CHIP_HIERARCHY = ["orichi", "yagami", "kula", "k", "mai", "kyo"]
+
+def get_chip_level(chip_name):
+    """获取棋子等级（数字越大等级越高）"""
+    if chip_name == "athena":
+        return -1  # Athena 不参与等级比较
+    if chip_name in CHIP_HIERARCHY:
+        return len(CHIP_HIERARCHY) - CHIP_HIERARCHY.index(chip_name)
+    return 0
+
+def should_update_defeat(current_defeat, new_defeat):
+    """判断是否应该更新 defeat 信息（只有击败更高等级才更新）"""
+    if current_defeat is None:
+        return True  # 没有 defeat 记录，直接更新
+    if new_defeat == "athena":
+        return False  # Athena 不算等级
+    if current_defeat == "athena":
+        return True  # 之前是 Athena，任何棋子都更高
+    
+    current_level = get_chip_level(current_defeat)
+    new_level = get_chip_level(new_defeat)
+    return new_level > current_level  # 只有新击败的等级更高才更新
 
 def random_init():
     """初始化棋盘"""
@@ -44,12 +68,11 @@ def draw_board(selected=None, turn_count=0, turn_timer=0, game_over=False, winne
                     # AI 棋子 - 显示背面(黑色圆 + defeat 信息)
                     pygame.draw.circle(SCREEN, (0,0,0), rect.center, CELL_SIZE//2-6)
                     
-                    # 统一从 defeat_board 读取 defeat 信息
-                    defeat_name = defeat_board[r][c]
-                    if defeat_name:
+                    # 从棋子对象读取 defeat 信息（跟随棋子移动）
+                    if chip.defeat:
                         # 显示双行: "defeat" + 被击败棋子名
                         defeat_text = FONT.render("defeat", True, (255,255,255))
-                        name_text = FONT.render(defeat_name, True, (255,255,255))
+                        name_text = FONT.render(chip.defeat, True, (255,255,255))
                         SCREEN.blit(defeat_text, (c*CELL_SIZE+5, r*CELL_SIZE+10))
                         SCREEN.blit(name_text, (c*CELL_SIZE+5, r*CELL_SIZE+30))
             # else: 空格不显示任何内容（包括 defeat 信息）
