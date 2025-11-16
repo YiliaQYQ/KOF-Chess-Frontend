@@ -3,16 +3,41 @@ import pygame
 from settings import SCREEN, CELL_SIZE, CHIP_COLORS, FONT, HEIGHT, WIDTH
 
 def animate_move(sr, sc, tr, tc, chip, steps=10):
-    """平滑移动动画"""
+    """
+    平滑移动动画
+    - 玩家棋子：显示棋子原色
+    - AI 棋子：统一显示黄色（隐藏等级信息）
+    """
+    from board import board, draw_board
+    
     start_x, start_y = sc * CELL_SIZE, sr * CELL_SIZE
     end_x, end_y = tc * CELL_SIZE, tr * CELL_SIZE
+    
+    # 临时移除起点的棋子，避免重复绘制
+    temp_chip = board[sr][sc]
+    board[sr][sc] = None
+    
     for i in range(1, steps + 1):
+        # 重绘整个棋盘
+        draw_board()
+        
+        # 计算移动位置
         x = start_x + (end_x - start_x) * i / steps
         y = start_y + (end_y - start_y) * i / steps
-        color = CHIP_COLORS.get(chip.name, (0, 0, 0))
+        
+        # AI 棋子统一用黄色，玩家棋子显示原色
+        if chip.is_player:
+            color = CHIP_COLORS.get(chip.name, (0, 0, 0))
+        else:
+            color = (255, 200, 0)  # AI 棋子统一黄色
+        
+        # 绘制移动中的棋子
         pygame.draw.rect(SCREEN, color, (x + 6, y + 6, CELL_SIZE - 12, CELL_SIZE - 12))
         pygame.display.flip()
         pygame.time.delay(25)
+    
+    # 恢复棋子到起点（调用方会处理最终位置）
+    board[sr][sc] = temp_chip
 
 def animate_attack_failed(sr, sc, tr, tc, attacker, draw_board):
     """
@@ -21,9 +46,23 @@ def animate_attack_failed(sr, sc, tr, tc, attacker, draw_board):
     2. 撞击闪光（红色）
     3. 攻击方消散（逐渐缩小透明）
     4. 防守方显示 defeat 更新
+    
+    注意：AI 棋子移动时统一显示黄色
     """
+    from board import board
+    
     start_x, start_y = sc * CELL_SIZE, sr * CELL_SIZE
     target_x, target_y = tc * CELL_SIZE, tr * CELL_SIZE
+    
+    # 确定移动颜色：AI 棋子用黄色，玩家棋子用原色
+    if attacker.is_player:
+        move_color = CHIP_COLORS.get(attacker.name, (0, 0, 0))
+    else:
+        move_color = (255, 200, 0)  # AI 棋子统一黄色
+    
+    # 临时移除起点的棋子
+    temp_chip = board[sr][sc]
+    board[sr][sc] = None
     
     # 第一阶段：冲刺动画（快速移动 80% 距离）
     steps = 8
@@ -32,8 +71,7 @@ def animate_attack_failed(sr, sc, tr, tc, attacker, draw_board):
         progress = i / steps * 0.8  # 只移动 80% 距离
         x = start_x + (target_x - start_x) * progress
         y = start_y + (target_y - start_y) * progress
-        color = CHIP_COLORS.get(attacker.name, (0, 0, 0))
-        pygame.draw.rect(SCREEN, color, (x + 6, y + 6, CELL_SIZE - 12, CELL_SIZE - 12))
+        pygame.draw.rect(SCREEN, move_color, (x + 6, y + 6, CELL_SIZE - 12, CELL_SIZE - 12))
         pygame.display.flip()
         pygame.time.delay(30)
     
@@ -46,6 +84,7 @@ def animate_attack_failed(sr, sc, tr, tc, attacker, draw_board):
         # 攻击方在 80% 位置
         attack_x = start_x + (target_x - start_x) * 0.8
         attack_y = start_y + (target_y - start_y) * 0.8
+        pygame.draw.rect(SCREEN, move_color, (attack_x + 6, attack_y + 6, CELL_SIZE - 12, CELL_SIZE - 12))
         pygame.draw.rect(SCREEN, color, (attack_x + 6, attack_y + 6, CELL_SIZE - 12, CELL_SIZE - 12), 3)
         pygame.display.flip()
         pygame.time.delay(100)
@@ -59,11 +98,12 @@ def animate_attack_failed(sr, sc, tr, tc, attacker, draw_board):
         size = int((CELL_SIZE - 12) * scale)
         offset = (CELL_SIZE - 12 - size) // 2
         if size > 0:
-            color = CHIP_COLORS.get(attacker.name, (0, 0, 0))
-            pygame.draw.rect(SCREEN, color, 
+            pygame.draw.rect(SCREEN, move_color, 
                            (attack_x + 6 + offset, attack_y + 6 + offset, size, size))
         pygame.display.flip()
         pygame.time.delay(50)
+    
+    # 不恢复棋子（因为攻击失败，棋子已消失）
 
 def animate_athena_fusion(r1, c1, r2, c2, draw_board, flashes=6):
     """雅典娜融合 / 同归于尽特效"""
