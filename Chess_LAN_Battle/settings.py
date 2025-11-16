@@ -1,4 +1,4 @@
-# settings.py
+# settings.py (LAN版本)
 import pygame
 
 # -------- 基本设置 --------
@@ -8,7 +8,7 @@ CELL_SIZE = 80
 ROWS, COLS = 5, 6
 WIDTH, HEIGHT = COLS * CELL_SIZE, ROWS * CELL_SIZE
 SCREEN = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Board AI LocalBattle")
+pygame.display.set_caption("Board AI LAN Battle")
 
 FONT = pygame.font.SysFont(None, 24)
 FPS = 30
@@ -31,3 +31,7 @@ TURN_TIME = 15
 
 # -------- 无动作惩罚设置 --------
 MAX_IDLE_TURNS = 5  # 连续无动作最大回合数
+
+# -------- 网络设置 --------
+DEFAULT_SERVER_HOST = "127.0.0.1"  # 默认服务器地址
+DEFAULT_SERVER_PORT = 50007
